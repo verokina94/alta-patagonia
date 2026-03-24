@@ -832,9 +832,53 @@ function nextStep() {
 function prevStep() {
   if (currentStep > 1) { currentStep--; updateProgress(); showStep(currentStep); }
 }
-function submitForm() {
-  showStep('success');
-  document.querySelector('.progress-container').style.display = 'none';
+  
+// NUEVA FUNCIÓN submitForm() INTEGRADA
+async function submitForm() {
+  // 1. Deshabilitamos el botón para evitar que hagan doble clic
+  const btnSubmit = document.querySelector('.btn-next[onclick="submitForm()"]');
+  const textoOriginal = btnSubmit.innerHTML;
+  btnSubmit.innerHTML = 'Enviando... ⏳';
+  btnSubmit.style.pointerEvents = 'none'; // Evita clics adicionales
+
+  try {
+    // 2. Preparamos el "paquete" de datos
+    const formData = new FormData();
+    
+    // Aquí pondremos la captura de los campos del formulario
+    const datosEmpleado = {
+      nombre: document.getElementById('nombre')?.value || '',
+      // ... más adelante sumaremos el resto de los datos y PDFs
+    };
+    formData.append('datos_json', JSON.stringify(datosEmpleado));
+
+    // 3. URL del Webhook de N8N (por ahora vacía, la configuraremos pronto)
+    const webhookUrl = 'URL_DEL_WEBHOOK_AQUI';
+
+    // 4. Enviamos los datos
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      body: formData
+    });
+
+    // 5. Evaluamos si N8N recibió todo correctamente
+    if (response.ok) {
+      // ¡ÉXITO! Aquí llamamos a tu lógica original para mostrar la pantalla final
+      showStep('success');
+      document.querySelector('.progress-container').style.display = 'none';
+    } else {
+      throw new Error('Error al enviar a N8N');
+    }
+
+  } catch (error) {
+    // Si falla la conexión o hay un error
+    console.error('Error:', error);
+    alert('Hubo un problema al enviar el legajo. Revise su conexión e intente nuevamente.');
+    
+    // Restauramos el botón para que puedan volver a intentar
+    btnSubmit.innerHTML = textoOriginal;
+    btnSubmit.style.pointerEvents = 'auto';
+  }
 }
 
 // ══════════════════════════════════════════════════════
